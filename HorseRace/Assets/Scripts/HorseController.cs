@@ -1,14 +1,21 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UIElements;
 
-public class HorseController : MonoBehaviour
+public class HorseController : Draggable
 {
 	public SpriteRenderer SpriteRenderer;
+	public TextMeshPro NameLabel;
 	public Rigidbody2D Rigidbody;
 
 	[System.NonSerialized]
 	public Sprite WinnerSprite;
+
+	public AudioSource AudioSource;
+	[System.NonSerialized]
+	public AudioClip BounceClip, WinnerClip;
 
 	private Vector2 movement;
 
@@ -22,7 +29,7 @@ public class HorseController : MonoBehaviour
 	public void StartRace()
 	{
 		this.movement = Random.insideUnitCircle.normalized * 2;
-		this.transform.localScale = new Vector3(Mathf.Sign(this.movement.x), 1, 1);
+		this.SpriteRenderer.transform.localEulerAngles = this.movement.x > 0 ? Vector3.zero : Vector3.up * 180;
 	}
 
 	public void StopRace()
@@ -30,8 +37,10 @@ public class HorseController : MonoBehaviour
 		this.movement = Vector2.zero;
 	}
 
-	private void Update()
+	protected override void Update()
 	{
+		base.Update();
+
 		this.Update_Move();
 	}
 
@@ -59,9 +68,15 @@ public class HorseController : MonoBehaviour
 				}
 
 				this.movement = Vector2.Reflect(this.movement, this.hitsCache[0].normal);
-				this.transform.localScale = new Vector3(Mathf.Sign(this.movement.x), 1, 1);
+				this.SpriteRenderer.transform.localEulerAngles = this.movement.x > 0 ? Vector3.zero : Vector3.up * 180;
 
 				this.lastBounceTime = Time.timeSinceLevelLoad;
+
+				if (!this.AudioSource.isPlaying)
+				{
+					this.AudioSource.pitch = Random.Range(0.8f, 1.2f);
+					this.AudioSource.PlayOneShot(this.BounceClip);
+				}
 
 				// Add a bit of random 30% of the time.
 				if (Random.Range(0, 100) < 30)

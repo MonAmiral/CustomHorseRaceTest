@@ -1,0 +1,1 @@
+Just drop all of these files directly in the data folder.

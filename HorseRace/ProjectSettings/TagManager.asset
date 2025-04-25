@@ -5,6 +5,8 @@ TagManager:
   serializedVersion: 2
   tags:
   - Goal
+  - Horse
+  - Kiss
   layers:
   - Default
   - TransparentFX

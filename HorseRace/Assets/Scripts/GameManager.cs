@@ -1,8 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
 using UnityEngine;
 using UnityEngine.Networking;
+using TwitchSDK;
+using TwitchSDK.Interop;
 
 public class GameManager : MonoBehaviour
 {
@@ -13,8 +14,10 @@ public class GameManager : MonoBehaviour
 	public TMPro.TextMeshProUGUI TimeLabel;
 	public UnityEngine.UI.Image VictoryImage;
 
-	public SpriteRenderer Level, Background, Start, Goal;
+	public SpriteRenderer Level, Background, Foreground, StartSprite, Goal, KissZone;
 	public Draggable[] Draggables;
+
+	public UnityEngine.UI.Button ConnectButton, StartPredictionButton, CancelPredictionButton;
 
 	private List<HorseController> horses = new List<HorseController>();
 
@@ -25,6 +28,35 @@ public class GameManager : MonoBehaviour
 	public AudioClip DefaultMusic;
 
 	private bool hasReloadedFlagPositions;
+
+	private GameTask<AuthenticationInfo> authenticationInfoTask;
+	private GameTask<AuthState> authStateTask;
+
+	private GameTask<Prediction> predictionTask;
+	private Prediction prediction;
+
+	public TMPro.TextMeshProUGUI StatusLabel;
+
+	public RectTransform Cursor;
+
+	private void Start()
+	{
+		Application.targetFrameRate = 60;
+		AudioSource.volume = 0.5f;
+
+		Twitch.API.LogOut();
+
+		this.authStateTask = Twitch.API.GetAuthState();
+		this.authenticationInfoTask = Twitch.API.GetAuthenticationInfo(TwitchOAuthScope.Channel.ManagePredictions);
+
+		UnityEngine.Cursor.visible = false;
+	}
+
+	private void LateUpdate()
+	{
+		this.Cursor.anchorMin = Camera.main.ScreenToViewportPoint(Input.mousePosition);
+		this.Cursor.anchorMax = this.Cursor.anchorMin;
+	}
 
 	public IEnumerator ReloadHorses()
 	{
@@ -126,10 +158,10 @@ public class GameManager : MonoBehaviour
 		string filePath = Application.persistentDataPath + "\\Level.png";
 		if (System.IO.File.Exists(filePath))
 		{
-			Texture2D levelTexture = this.LoadTexture(filePath);
-			if (levelTexture != null)
+			Texture2D texture = this.LoadTexture(filePath);
+			if (texture != null)
 			{
-				this.Level.sprite = Sprite.Create(levelTexture, new Rect(0, 0, levelTexture.width, levelTexture.height), Vector2.one * 0.5f);
+				this.Level.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.one * 0.5f);
 				GameObject.Destroy(this.Level.gameObject.GetComponent<PolygonCollider2D>());
 				this.Level.gameObject.AddComponent<PolygonCollider2D>();
 
@@ -140,10 +172,20 @@ public class GameManager : MonoBehaviour
 		filePath = Application.persistentDataPath + "\\Background.png";
 		if (System.IO.File.Exists(filePath))
 		{
-			Texture2D backgroundTexture = this.LoadTexture(filePath);
-			if (backgroundTexture != null)
+			Texture2D texture = this.LoadTexture(filePath);
+			if (texture != null)
 			{
-				this.Background.sprite = Sprite.Create(backgroundTexture, new Rect(0, 0, backgroundTexture.width, backgroundTexture.height), Vector2.one * 0.5f);
+				this.Background.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.one * 0.5f);
+			}
+		}
+
+		filePath = Application.persistentDataPath + "\\Foreground.png";
+		if (System.IO.File.Exists(filePath))
+		{
+			Texture2D texture = this.LoadTexture(filePath);
+			if (texture != null)
+			{
+				this.Foreground.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.one * 0.5f);
 			}
 		}
 	}
@@ -156,7 +198,7 @@ public class GameManager : MonoBehaviour
 			Texture2D startTexture = this.LoadTexture(filePath);
 			if (startTexture != null)
 			{
-				this.Start.sprite = Sprite.Create(startTexture, new Rect(0, 0, startTexture.width, startTexture.height), Vector2.one * 0.5f);
+				this.StartSprite.sprite = Sprite.Create(startTexture, new Rect(0, 0, startTexture.width, startTexture.height), Vector2.one * 0.5f);
 				yield return null;
 			}
 		}
@@ -204,6 +246,10 @@ public class GameManager : MonoBehaviour
 
 	public IEnumerator StartRace()
 	{
+		this.KissZone.enabled = false;
+
+		this.StartPredictionButton.interactable = false;
+
 		// Play countdown.
 		yield return this.PlayClip("Countdown.mp3", this.DefaultCountdownClip);
 		this.UIAnimator.Play("GameStart");
@@ -250,6 +296,8 @@ public class GameManager : MonoBehaviour
 			horse.StopRace();
 		}
 
+		this.EndPrediction(winner);
+
 		Time.timeScale = 1;
 
 		this.UIAnimator.Play("GameOver");
@@ -266,6 +314,124 @@ public class GameManager : MonoBehaviour
 		}
 
 		yield break;
+	}
+
+	public bool CreatePrediction(string[] names)
+	{
+		if (this.authStateTask.MaybeResult == null)
+		{
+			return false;
+		}
+
+		switch (this.authStateTask.MaybeResult.Status)
+		{
+			case AuthStatus.Loading:
+				return false;
+
+			case AuthStatus.LoggedOut:
+			case AuthStatus.WaitingForCode:
+				if (this.authenticationInfoTask.MaybeResult != null)
+				{
+					Application.OpenURL(this.authenticationInfoTask.MaybeResult.Uri);
+					this.StatusLabel.text = "Connecting in browser...";
+
+					this.StartCoroutine(this.WaitForConnectionToFinish());
+				}
+
+				return false;
+
+			case AuthStatus.LoggedIn:
+				this.predictionTask = Twitch.API.NewPrediction(new PredictionDefinition()
+				{
+					Title = "Who will win?",
+					Duration = 60,
+					Outcomes = names
+				});
+
+				this.StartCoroutine(this.WaitForPredictionToStart());
+				return true;
+
+			default:
+				throw new System.Exception();
+		}
+	}
+
+	private IEnumerator WaitForConnectionToFinish()
+	{
+		while (true)
+		{
+			yield return new WaitForSeconds(1);
+
+			this.authStateTask = Twitch.API.GetAuthState();
+			if (this.authStateTask.MaybeResult != null && this.authStateTask.MaybeResult.Status == AuthStatus.LoggedIn)
+			{
+				this.StatusLabel.text = "Connected!";
+				yield break;
+			}
+		}
+	}
+
+	private IEnumerator WaitForPredictionToStart()
+	{
+		while (true)
+		{
+			yield return new WaitForSeconds(1);
+
+			if (this.predictionTask.MaybeResult == null)
+			{
+				continue;
+			}
+
+			this.prediction = this.predictionTask.MaybeResult;
+			this.StatusLabel.text = "Prediction started.";
+
+			this.StartPredictionButton.gameObject.SetActive(false);
+			this.CancelPredictionButton.gameObject.SetActive(true);
+
+			yield break;
+		}
+	}
+
+	public void EndPrediction(HorseController winner)
+	{
+		if (this.prediction == null)
+		{
+			return;
+		}
+
+		this.StartPredictionButton.gameObject.SetActive(true);
+		this.CancelPredictionButton.gameObject.SetActive(false);
+
+		for (int i = 0; i < this.prediction.Info.Outcomes.Length; i++)
+		{
+			if (this.prediction.Info.Outcomes[i].Title == winner.NameLabel.text)
+			{
+				this.prediction.Resolve(this.prediction.Info.Outcomes[i]);
+
+				this.StatusLabel.text = $"Prediction ended. {winner.NameLabel.text} won!";
+				this.prediction = null;
+				return;
+			}
+		}
+
+		this.prediction.Cancel();
+		this.StatusLabel.text = "Prediction ended. Winner not found.";
+		this.prediction = null;
+	}
+
+	public void CancelPrediction()
+	{
+		if (this.prediction == null)
+		{
+			return;
+		}
+
+		this.prediction.Cancel();
+		this.StatusLabel.text = "Prediction cancelled.";
+		this.prediction = null;
+
+		this.StartPredictionButton.gameObject.SetActive(true);
+		this.CancelPredictionButton.gameObject.SetActive(false);
 	}
 
 	public void UI_NavigateToHorseFolder()
@@ -322,6 +488,8 @@ public class GameManager : MonoBehaviour
 		{
 			horse.transform.position = this.HorseSpawnPoint.position + (Vector3)Random.insideUnitCircle;
 		}
+
+		this.KissZone.enabled = true;
 	}
 
 	public void UI_StopRace()
@@ -336,6 +504,8 @@ public class GameManager : MonoBehaviour
 		{
 			horse.StopRace();
 		}
+
+		this.KissZone.enabled = true;
 	}
 
 	public void UI_ToggleFullScreen()
@@ -352,7 +522,29 @@ public class GameManager : MonoBehaviour
 
 	public void UI_Quit()
 	{
+		this.CancelPrediction();
 		Application.Quit();
+	}
+
+	public void UI_CreatePrediction()
+	{
+		if (this.horses.Count == 0)
+		{
+			return;
+		}
+
+		string[] names = new string[this.horses.Count];
+		for (int i = 0; i < this.horses.Count; i++)
+		{
+			names[i] = this.horses[i].NameLabel.text;
+		}
+
+		this.CreatePrediction(names);
+	}
+
+	public void UI_CancelPrediction()
+	{
+		this.CancelPrediction();
 	}
 
 	private IEnumerator PlayClip(string fileName, AudioClip defaultClip)

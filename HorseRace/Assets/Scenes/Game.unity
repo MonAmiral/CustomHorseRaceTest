@@ -1907,7 +1907,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &558813343
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1921,11 +1921,11 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 869187587}
-  m_Father: {fileID: 1942137109}
+  m_Father: {fileID: 1204501234}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -5, y: -5}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 160, y: 30}
   m_Pivot: {x: 1, y: 1}
 --- !u!225 &558813344
@@ -4204,6 +4204,64 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1163081683}
   m_CullTransparentMesh: 1
+--- !u!1 &1204501233
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1204501234}
+  - component: {fileID: 1204501236}
+  - component: {fileID: 1204501235}
+  m_Layer: 5
+  m_Name: StopButton
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!224 &1204501234
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1204501233}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 558813343}
+  m_Father: {fileID: 1942137109}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 1, y: 1}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: -5, y: -5}
+  m_SizeDelta: {x: 160, y: 30}
+  m_Pivot: {x: 1, y: 1}
+--- !u!225 &1204501235
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1204501233}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!222 &1204501236
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1204501233}
+  m_CullTransparentMesh: 1
 --- !u!1 &1251215355
 GameObject:
   m_ObjectHideFlags: 0
@@ -4872,6 +4930,7 @@ MonoBehaviour:
   Draggables:
   - {fileID: 1414633755}
   - {fileID: 824868799}
+  - {fileID: 1125096017}
   ConnectButton: {fileID: 0}
   StartPredictionButton: {fileID: 1915227876}
   CancelPredictionButton: {fileID: 1755570278}
@@ -4881,7 +4940,8 @@ MonoBehaviour:
   DefaultWinnerClip: {fileID: 8300000, guid: 40c1690587cab644e9d44928ff1e78dc, type: 3}
   DefaultMusic: {fileID: 8300000, guid: 8ea9374e8bf62df4ab0fac591e91bab0, type: 3}
   StatusLabel: {fileID: 502935615}
-  Cursor: {fileID: 43942242}
+  Cursor: {fileID: 43942243}
+  StopButton: {fileID: 558813344}
 --- !u!4 &1477295170
 Transform:
   m_ObjectHideFlags: 0
@@ -5308,7 +5368,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 2785017855
+    rgba: 16777215
   m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -6626,7 +6686,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 602659421}
-  - {fileID: 558813343}
+  - {fileID: 1204501234}
   - {fileID: 131963871}
   - {fileID: 1592267787}
   - {fileID: 1675898534}

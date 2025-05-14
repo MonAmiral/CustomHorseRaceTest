@@ -27,6 +27,8 @@ public class HorseController : Draggable
 	private RaycastHit2D[] hitsCache = new RaycastHit2D[3];
 	private float lastBounceTime;
 
+	public AnimationCurve SpeedMultiplier;
+
 	public void Start()
 	{
 		HorseController.KissAvailabilityTime = 0;
@@ -36,6 +38,7 @@ public class HorseController : Draggable
 	{
 		this.movement = Random.insideUnitCircle.normalized * 2;
 		this.SpriteRenderer.transform.localEulerAngles = this.movement.x > 0 ? Vector3.zero : Vector3.up * 180;
+		this.lastBounceTime = Time.timeSinceLevelLoad;
 	}
 
 	public void StopRace()
@@ -57,10 +60,12 @@ public class HorseController : Draggable
 			return;
 		}
 
+		float speedMultiplier = this.SpeedMultiplier.Evaluate(Time.timeSinceLevelLoad - this.lastBounceTime);
+
 		if (Time.timeSinceLevelLoad > this.lastBounceTime + 0.1f)
 		{
 			bool isInKissingZone = false;
-			int hits = this.Rigidbody.Cast(this.movement, this.hitsCache, this.movement.magnitude * Time.deltaTime);
+			int hits = this.Rigidbody.Cast(this.movement, this.hitsCache, this.movement.magnitude * speedMultiplier * Time.deltaTime);
 			for (int i = 0; i < hits; i++)
 			{
 				RaycastHit2D hit = this.hitsCache[i];
@@ -83,10 +88,11 @@ public class HorseController : Draggable
 				}
 				else
 				{
+					this.lastBounceTime = Time.timeSinceLevelLoad;
+					speedMultiplier = 1;
+
 					this.movement = Vector2.Reflect(this.movement, hit.normal);
 					this.SpriteRenderer.transform.localEulerAngles = this.movement.x > 0 ? Vector3.zero : Vector3.up * 180;
-
-					this.lastBounceTime = Time.timeSinceLevelLoad;
 
 					if (!this.AudioSource.isPlaying)
 					{
@@ -108,16 +114,13 @@ public class HorseController : Draggable
 							HorseController.KissAvailabilityTime = Time.timeSinceLevelLoad + 0.5f;
 							this.KissParticles.Emit(5);
 
-							if (Random.Range(0, 100) < 20)
-							{
-								this.AudioSource.PlayOneShot(this.KissClip);
-							}
+							this.AudioSource.PlayOneShot(this.KissClip);
 						}
 					}
 				}
 			}
 		}
 
-		this.transform.position += (Vector3)this.movement * Time.deltaTime;
+		this.transform.position += (Vector3)this.movement * speedMultiplier * Time.deltaTime;
 	}
 }

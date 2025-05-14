@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Networking;
 using TwitchSDK;
 using TwitchSDK.Interop;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
@@ -12,12 +13,12 @@ public class GameManager : MonoBehaviour
 
 	public Animator UIAnimator;
 	public TMPro.TextMeshProUGUI TimeLabel;
-	public UnityEngine.UI.Image VictoryImage;
+	public Image VictoryImage;
 
 	public SpriteRenderer Level, Background, Foreground, StartSprite, Goal, KissZone;
 	public Draggable[] Draggables;
 
-	public UnityEngine.UI.Button ConnectButton, StartPredictionButton, CancelPredictionButton;
+	public Button ConnectButton, StartPredictionButton, CancelPredictionButton;
 
 	private List<HorseController> horses = new List<HorseController>();
 
@@ -37,7 +38,9 @@ public class GameManager : MonoBehaviour
 
 	public TMPro.TextMeshProUGUI StatusLabel;
 
-	public RectTransform Cursor;
+	public Image Cursor;
+	private float timeSinceCursorMovement;
+	public CanvasGroup StopButton;
 
 	private void Start()
 	{
@@ -52,10 +55,23 @@ public class GameManager : MonoBehaviour
 		UnityEngine.Cursor.visible = false;
 	}
 
+	private void Update()
+	{
+		this.timeSinceCursorMovement += Time.deltaTime;
+
+		if (Input.GetAxis("Mouse X") != 0 || Input.GetAxis("Mouse Y") != 0)
+		{
+			this.timeSinceCursorMovement = 0;
+		}
+
+		this.StopButton.alpha = Mathf.Clamp01(3 - this.timeSinceCursorMovement);
+		this.Cursor.color = new Color(1, 1, 1, this.StopButton.alpha);
+	}
+
 	private void LateUpdate()
 	{
-		this.Cursor.anchorMin = Camera.main.ScreenToViewportPoint(Input.mousePosition);
-		this.Cursor.anchorMax = this.Cursor.anchorMin;
+		this.Cursor.rectTransform.anchorMin = Camera.main.ScreenToViewportPoint(Input.mousePosition);
+		this.Cursor.rectTransform.anchorMax = this.Cursor.rectTransform.anchorMin;
 	}
 
 	public IEnumerator ReloadHorses()
@@ -251,8 +267,9 @@ public class GameManager : MonoBehaviour
 		this.StartPredictionButton.interactable = false;
 
 		// Play countdown.
-		yield return this.PlayClip("Countdown.mp3", this.DefaultCountdownClip);
 		this.UIAnimator.Play("GameStart");
+		yield return new WaitForSeconds(1);
+		yield return this.PlayClip("Countdown.mp3", this.DefaultCountdownClip);
 
 		// Wait.
 		yield return new WaitForSeconds(3);
@@ -401,6 +418,7 @@ public class GameManager : MonoBehaviour
 
 		this.StartPredictionButton.gameObject.SetActive(true);
 		this.CancelPredictionButton.gameObject.SetActive(false);
+		this.StartPredictionButton.interactable = true;
 
 		for (int i = 0; i < this.prediction.Info.Outcomes.Length; i++)
 		{
@@ -432,6 +450,7 @@ public class GameManager : MonoBehaviour
 
 		this.StartPredictionButton.gameObject.SetActive(true);
 		this.CancelPredictionButton.gameObject.SetActive(false);
+		this.StartPredictionButton.interactable = true;
 	}
 
 	public void UI_NavigateToHorseFolder()
@@ -530,6 +549,7 @@ public class GameManager : MonoBehaviour
 	{
 		if (this.horses.Count == 0)
 		{
+			this.StatusLabel.text = "Reload horses first!";
 			return;
 		}
 

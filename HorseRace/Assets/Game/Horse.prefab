@@ -5244,6 +5244,39 @@ MonoBehaviour:
   AudioSource: {fileID: 6941149585273814779}
   KissClip: {fileID: 8300000, guid: 11be899890f2f2348a9e03d81512ee52, type: 3}
   KissParticles: {fileID: 1476620073343946602}
+  SpeedMultiplier:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 69
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.25
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1.5
+      value: 1.5
+      inSlope: 0.4
+      outSlope: 0
+      tangentMode: 69
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!50 &4743383693538410918
 Rigidbody2D:
   serializedVersion: 4
